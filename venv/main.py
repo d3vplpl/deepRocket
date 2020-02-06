@@ -14,14 +14,16 @@ from tensorflow.python.keras.layers import Dense, Flatten, Conv2D, Dropout
 CURRENT_YEAR = str(date.today().year)
 path_mst = (os.path.join(os.path.curdir, 'mst'))
 
+
 def get_data():
+
     url = 'http://bossa.pl/pub/metastock/mstock/mstall.zip'
     print('Getting http://bossa.pl/pub/metastock/mstock/mstall.zip...')
     req = requests.get(url)
     print('Success!')
     # check if directory exists, if not create it
-    if not (os.path.isdir("file")):
-        os.mkdir("file")
+    if not (os.path.isdir('file')):
+        os.mkdir('file')
     stock_file = open(os.path.join('file', os.path.basename(url)), 'wb')
     for chunk in req.iter_content(100000):
         stock_file.write(chunk)
@@ -48,37 +50,45 @@ def process_bossa_data():
         header = cs_list.pop(0) #removes header
         float_list = []
         ticker = ''
+        # (x for x in xyz if x not in a)
+        # els = [el for el in cs_list if el[1] == 'LSISOFT']
+        # for el in els: #przechodzimy po elementach listy (datach notowań)
         for el in cs_list:
-            ticker = el.pop(0) #removes ticker
-            removed_date = el.pop(0) #removes date
+            ticker = el.pop(0)  # removes ticker
+            removed_date = el.pop(0)  # removes date
             remove_1 = el.pop(0)
             remove_2 = el.pop(0)
-            remove_3 = el.pop(0) # remove all the prices except 1
+            remove_3 = el.pop(0)
+            remove_4 = el.pop(1)  # remove all the prices except 1 also remove the volume
             float_list.append([float(i) for i in el])
         n_array = numpy.array(float_list)
 
-        closes = n_array[:, 1]
+        closes = n_array[:, 0]  # every row of column 0, basically just take the column 0
+        # print(ticker, 'closes: ')
+        # print(n_array)
+        # print(closes)
         float_list = n_array.tolist()
         #print(closes)
         max_close = max(closes)
         last_close = float_list[len(float_list)-1]
         #print(last_close)
-        last_close = last_close[1]
-        #print(max_close)
+        last_close = last_close[0]
+        # print('Max close:', max_close)
 
         if last_close == max_close:
+        # if ticker == 'LSISOFT':
             print(ticker)
+            #print(max_close)
+            #print(last_close)
             if ticker == 'LSISOFT':
-                print(float_list[-5:-1])
+
                 with open(ticker + '.csv', mode='w') as csv_file:
-                    csv_wr = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL,lineterminator='\n')
+                    csv_wr = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
+                    list_to_be_written = []
+                    list1 = (float_list[-5] + (float_list[-4])+ float_list[-3] + (float_list[-2]) + float_list[-1])
 
-                    csv_wr.writerow(float_list[-5])
-                    csv_wr.writerow(float_list[-4])
-                    csv_wr.writerow(float_list[-3])
-                    csv_wr.writerow(float_list[-2])
-                    csv_wr.writerow(float_list[-1])
-
+                    print('list to be written: ', list1)
+                    csv_wr.writerow(list1)
 
 process_bossa_data()
 img_rows, img_cols = 28, 28
@@ -94,9 +104,10 @@ def data_prep(raw):
     out_x = x_shaped_array / 255
     return out_x, out_y
 
+
 def train_model_template():
 
-    train_file = "train.csv"
+    train_file = "train.csv" #tutaj muszę dać mój plik z labelami
     raw_data = pd.read_csv(train_file)
     x, y = data_prep(raw_data)
 
@@ -116,5 +127,12 @@ def train_model_template():
               batch_size=128,
               epochs=2,
               validation_split=0.2)
-
 #train_model_template()
+
+
+def train_my_model():
+
+    train_file = "train.csv"  # tutaj muszę dać mój plik z labelami
+    raw_data = pd.read_csv(train_file)
+    x, y = data_prep(raw_data) #wymiary muszą być dobre
+    my_model = Sequential()
