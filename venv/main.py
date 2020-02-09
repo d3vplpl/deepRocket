@@ -83,8 +83,12 @@ def process_bossa_data():
             if ticker == 'LSISOFT':
 
                 with open(ticker + '.csv', mode='w') as csv_file:
+                    fieldnames = ['price1', 'price2', 'price3', 'price4', 'price5']
+                    writer = csv.DictWriter(csv_file, fieldnames=fieldnames, lineterminator='\n')
+                    writer.writeheader()
                     csv_wr = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
                     list_to_be_written = []
+
                     list1 = (float_list[-5] + (float_list[-4])+ float_list[-3] + (float_list[-2]) + float_list[-1])
 
                     print('list to be written: ', list1)
