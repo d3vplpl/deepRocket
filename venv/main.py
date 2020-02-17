@@ -13,6 +13,7 @@ from tensorflow.python.keras.layers import Dense, Flatten, Conv2D, Dropout
 
 CURRENT_YEAR = str(date.today().year)
 path_mst = (os.path.join(os.path.curdir, 'mst'))
+path_csv = (os.path.join(os.path.curdir, 'csv_files'))
 
 
 def get_data():
@@ -47,12 +48,14 @@ def process_bossa_data():
         if(date_of_last[:4]) != CURRENT_YEAR:
             continue
 
-        header = cs_list.pop(0) #removes header
+        header = cs_list.pop(0)  # removes header
+        if str(header).find('OPENINT') != -1:   # if openint is found - we don't need these
+            print('open int found ', fi, header)
+            continue
+
         float_list = []
         ticker = ''
-        # (x for x in xyz if x not in a)
-        # els = [el for el in cs_list if el[1] == 'LSISOFT']
-        # for el in els: #przechodzimy po elementach listy (datach notowań)
+
         for el in cs_list:
             ticker = el.pop(0)  # removes ticker
             removed_date = el.pop(0)  # removes date
@@ -64,35 +67,47 @@ def process_bossa_data():
         n_array = numpy.array(float_list)
 
         closes = n_array[:, 0]  # every row of column 0, basically just take the column 0
-        # print(ticker, 'closes: ')
-        # print(n_array)
-        # print(closes)
+
         float_list = n_array.tolist()
         #print(closes)
         max_close = max(closes)
+        min_close = min(closes)
         last_close = float_list[len(float_list)-1]
         #print(last_close)
         last_close = last_close[0]
         # print('Max close:', max_close)
-
+        is_rocket = False
+        is_plummet = False
         if last_close == max_close:
-        # if ticker == 'LSISOFT':
-            print(ticker)
-            #print(max_close)
-            #print(last_close)
-            if ticker == 'LSISOFT':
+            is_rocket = True
+            print(ticker, ' is a rocket')
+        if last_close == min_close:
+            is_plummet = True
+            print(ticker, ' is a plummet')
 
-                with open(ticker + '.csv', mode='w') as csv_file:
-                    fieldnames = ['price1', 'price2', 'price3', 'price4', 'price5']
-                    writer = csv.DictWriter(csv_file, fieldnames=fieldnames, lineterminator='\n')
-                    writer.writeheader()
-                    csv_wr = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL, lineterminator='\n')
-                    list_to_be_written = []
-
-                    list1 = (float_list[-5] + (float_list[-4])+ float_list[-3] + (float_list[-2]) + float_list[-1])
+        if is_rocket or is_plummet:
+            f_name = os.path.join(path_csv, ticker + '.csv')
+            with open(f_name, mode='w') as csv_file:
+                rocket_label_element = [1]
+                plummet_label_element = [2]
+                try:
+                    if is_rocket:
+                        list1 = (rocket_label_element + float_list[-5] + (float_list[-4]) + float_list[-3] + (float_list[-2]) + float_list[-1])
+                    if is_plummet:
+                        list1 = (plummet_label_element + float_list[-5] + (float_list[-4]) + float_list[-3] + (
+                        float_list[-2]) + float_list[-1])
 
                     print('list to be written: ', list1)
+                    fieldnames = ['label', 'price1', 'price2', 'price3', 'price4', 'price5']
+                    writer = csv.DictWriter(csv_file, fieldnames=fieldnames, lineterminator='\n')
+                    writer.writeheader()
+                    csv_wr = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL,
+                                            lineterminator='\n')
                     csv_wr.writerow(list1)
+
+                except:
+                    print('Not enough prices for ticker ', ticker)
+
 
 process_bossa_data()
 img_rows, img_cols = 28, 28
