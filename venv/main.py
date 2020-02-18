@@ -16,6 +16,22 @@ path_mst = (os.path.join(os.path.curdir, 'mst'))
 path_csv = (os.path.join(os.path.curdir, 'csv_files'))
 
 
+def data_normalize(x, whole_set_of_Xs):
+    #x - min
+    #max- min
+    x = x[0]
+    min_x = min(whole_set_of_Xs)
+    min_x = min_x[0]
+    max_x = max(whole_set_of_Xs)
+    max_x = max_x[0]
+    if max_x - min_x != 0:
+        z = (x - min_x) / (max_x - min_x)
+    else:
+        z = 0
+    result = [z]
+    return result
+
+
 def get_data():
 
     url = 'http://bossa.pl/pub/metastock/mstock/mstall.zip'
@@ -44,6 +60,7 @@ def process_bossa_data():
         f = open(os.path.join(path_mst, fi))
         cs = csv.reader(f)
         cs_list = list(cs)
+
         date_of_last = (cs_list[len(cs_list)-1][1])
         if(date_of_last[:4]) != CURRENT_YEAR:
             continue
@@ -69,6 +86,8 @@ def process_bossa_data():
         closes = n_array[:, 0]  # every row of column 0, basically just take the column 0
 
         float_list = n_array.tolist()
+        if len(cs_list) < 5:
+            continue  # if there is too little data on given ticker then ignore it
         #print(closes)
         max_close = max(closes)
         min_close = min(closes)
@@ -90,23 +109,36 @@ def process_bossa_data():
             with open(f_name, mode='w') as csv_file:
                 rocket_label_element = [1]
                 plummet_label_element = [2]
-                try:
-                    if is_rocket:
-                        list1 = (rocket_label_element + float_list[-5] + (float_list[-4]) + float_list[-3] + (float_list[-2]) + float_list[-1])
-                    if is_plummet:
-                        list1 = (plummet_label_element + float_list[-5] + (float_list[-4]) + float_list[-3] + (
-                        float_list[-2]) + float_list[-1])
+                list_to_normalize = []
+                list_to_normalize.append(float_list[-5])
+                list_to_normalize.append(float_list[-4])
+                list_to_normalize.append(float_list[-3])
+                list_to_normalize.append(float_list[-2])
+                list_to_normalize.append(float_list[-1])
+                if is_rocket:
+                    n1, n2, n3, n4, n5 = data_normalize(float_list[-5],list_to_normalize), data_normalize(float_list[-4],list_to_normalize), \
+                                         data_normalize(float_list[-3],list_to_normalize), data_normalize(float_list[-2],list_to_normalize),\
+                                         data_normalize(float_list[-1],list_to_normalize)
+                    list1 = (rocket_label_element + n1 + n2 + n3 + n4 + n5)
+                if is_plummet:
+                    n1, n2, n3, n4, n5 = data_normalize(float_list[-5], list_to_normalize), data_normalize(
+                        float_list[-4], list_to_normalize), \
+                                         data_normalize(float_list[-3], list_to_normalize), data_normalize(
+                        float_list[-2], list_to_normalize), \
+                                         data_normalize(float_list[-1], list_to_normalize)
+                    list1 = (rocket_label_element + n1 + n2 + n3 + n4 + n5)
 
-                    print('list to be written: ', list1)
-                    fieldnames = ['label', 'price1', 'price2', 'price3', 'price4', 'price5']
-                    writer = csv.DictWriter(csv_file, fieldnames=fieldnames, lineterminator='\n')
-                    writer.writeheader()
-                    csv_wr = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL,
+                print('list to be written: ', list1)
+                fieldnames = ['label', 'price1', 'price2', 'price3', 'price4', 'price5']
+                writer = csv.DictWriter(csv_file, fieldnames=fieldnames, lineterminator='\n')
+                writer.writeheader()
+                csv_wr = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL,
                                             lineterminator='\n')
-                    csv_wr.writerow(list1)
+                csv_wr.writerow(list1)
 
-                except:
-                    print('Not enough prices for ticker ', ticker)
+
+                print('Not enough prices for ticker ', ticker)
+
 
 
 process_bossa_data()
@@ -155,3 +187,5 @@ def train_my_model():
     raw_data = pd.read_csv(train_file)
     x, y = data_prep(raw_data) #wymiary muszą być dobre
     my_model = Sequential()
+
+
