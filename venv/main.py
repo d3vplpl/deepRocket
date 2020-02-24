@@ -10,10 +10,13 @@ from datetime import date
 from tensorflow.python import keras
 from tensorflow.python.keras.models import Sequential
 from tensorflow.python.keras.layers import Dense, Flatten, Conv2D, Dropout
+from os import listdir
+from os.path import isfile, join
 
 CURRENT_YEAR = str(date.today().year)
 path_mst = (os.path.join(os.path.curdir, 'mst'))
 path_csv = (os.path.join(os.path.curdir, 'csv_files'))
+fieldnames = ['label', 'price1', 'price2', 'price3', 'price4'] #  nagłówki pliku csv pliku train
 
 
 def data_normalize(x, whole_set_of_Xs):
@@ -48,8 +51,6 @@ def get_data():
     zipf = zipfile.ZipFile(os.path.join('file', os.path.basename(url)))
     zipf.extractall((os.path.join(os.path.curdir, 'mst')))
 
-
-#get_data()
 
 def process_bossa_data():
 
@@ -109,27 +110,19 @@ def process_bossa_data():
             with open(f_name, mode='w') as csv_file:
                 rocket_label_element = [1]
                 plummet_label_element = [2]
-                list_to_normalize = []
-                list_to_normalize.append(float_list[-5])
-                list_to_normalize.append(float_list[-4])
-                list_to_normalize.append(float_list[-3])
-                list_to_normalize.append(float_list[-2])
-                list_to_normalize.append(float_list[-1])
+                list_to_normalize = [float_list[-5], float_list[-4], float_list[-3], float_list[-2]]
+                label = [0]
                 if is_rocket:
-                    n1, n2, n3, n4, n5 = data_normalize(float_list[-5],list_to_normalize), data_normalize(float_list[-4],list_to_normalize), \
-                                         data_normalize(float_list[-3],list_to_normalize), data_normalize(float_list[-2],list_to_normalize),\
-                                         data_normalize(float_list[-1],list_to_normalize)
-                    list1 = (rocket_label_element + n1 + n2 + n3 + n4 + n5)
+                    label = rocket_label_element
                 if is_plummet:
-                    n1, n2, n3, n4, n5 = data_normalize(float_list[-5], list_to_normalize), data_normalize(
-                        float_list[-4], list_to_normalize), \
-                                         data_normalize(float_list[-3], list_to_normalize), data_normalize(
-                        float_list[-2], list_to_normalize), \
-                                         data_normalize(float_list[-1], list_to_normalize)
-                    list1 = (rocket_label_element + n1 + n2 + n3 + n4 + n5)
+                    label = plummet_label_element
+
+                n1, n2, n3, n4 = data_normalize(float_list[-5],list_to_normalize), data_normalize(float_list[-4],list_to_normalize), \
+                                         data_normalize(float_list[-3],list_to_normalize), data_normalize(float_list[-2],list_to_normalize)
+                list1 = (label + n1 + n2 + n3 + n4)
 
                 print('list to be written: ', list1)
-                fieldnames = ['label', 'price1', 'price2', 'price3', 'price4', 'price5']
+
                 writer = csv.DictWriter(csv_file, fieldnames=fieldnames, lineterminator='\n')
                 writer.writeheader()
                 csv_wr = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL,
@@ -137,11 +130,6 @@ def process_bossa_data():
                 csv_wr.writerow(list1)
 
 
-                print('Not enough prices for ticker ', ticker)
-
-
-
-process_bossa_data()
 img_rows, img_cols = 28, 28
 num_classes = 10
 
@@ -187,5 +175,20 @@ def train_my_model():
     raw_data = pd.read_csv(train_file)
     x, y = data_prep(raw_data) #wymiary muszą być dobre
     my_model = Sequential()
+
+
+def merge_csv_files():
+
+    extension = 'csv'
+    all_filenames = [f for f in listdir(path_csv) if isfile(join(path_csv, f))]
+    print(all_filenames)
+    # combine all files in the list
+    combined_csv = pd.concat([pd.read_csv(join(path_csv, f)) for f in all_filenames])
+    # export to csv
+    combined_csv.to_csv("combined_csv.csv", index=False, encoding='utf-8')
+
+#get_data()
+#process_bossa_data()
+merge_csv_files()
 
 
