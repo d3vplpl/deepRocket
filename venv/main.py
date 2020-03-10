@@ -15,7 +15,8 @@ from os.path import isfile, join
 
 CURRENT_YEAR = str(date.today().year)
 path_mst = (os.path.join(os.path.curdir, 'mst'))
-path_csv = (os.path.join(os.path.curdir, 'csv_files'))
+csv_files = (os.path.join(os.path.curdir, 'csv_files'))
+train_files = (os.path.join(os.path.curdir, 'train_files'))
 fieldnames = ['label', 'price1', 'price2', 'price3', 'price4'] #  nagłówki pliku csv pliku train
 
 
@@ -67,7 +68,7 @@ def process_bossa_data():
             continue
 
         header = cs_list.pop(0)  # removes header
-        if str(header).find('OPENINT') != -1:   # if openint is found - we don't need these
+        if str(header).find('OPENINT') != -1:   # if openint is found then eliminate - we don't need these
             print('open int found ', fi, header)
             continue
 
@@ -106,7 +107,7 @@ def process_bossa_data():
             print(ticker, ' is a plummet')
 
         if is_rocket or is_plummet:
-            f_name = os.path.join(path_csv, ticker + '.csv')
+            f_name = os.path.join(csv_files, ticker + '.csv')
             with open(f_name, mode='w') as csv_file:
                 rocket_label_element = [1]
                 plummet_label_element = [2]
@@ -173,11 +174,11 @@ def train_my_model():
 
     train_file = "train.csv"  # tutaj muszę dać mój plik z labelami
     raw_data = pd.read_csv(train_file)
-    x, y = data_prep(raw_data) #wymiary muszą być dobre
+    x, y = data_prep(raw_data)  # wymiary muszą być dobre
     my_model = Sequential()
 
 
-def merge_csv_files():
+def merge_csv_files(path_csv):
 
     extension = 'csv'
     all_filenames = [f for f in listdir(path_csv) if isfile(join(path_csv, f))]
@@ -187,8 +188,9 @@ def merge_csv_files():
     # export to csv
     combined_csv.to_csv("combined_csv.csv", index=False, encoding='utf-8')
 
-#get_data()
-#process_bossa_data()
-merge_csv_files()
+get_data()
+process_bossa_data()
+merge_csv_files(csv_files)  # this merges small csv per ticket files into one, daily csv for all the tickets
+#merge_csv_files(train_files) # this merges daily csv files into train file
 
 
