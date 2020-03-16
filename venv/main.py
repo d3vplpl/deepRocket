@@ -18,7 +18,7 @@ path_mst = (os.path.join(os.path.curdir, 'mst'))
 csv_files = (os.path.join(os.path.curdir, 'csv_files'))
 train_files = (os.path.join(os.path.curdir, 'train_files'))
 fieldnames = ['label', 'price1', 'price2', 'price3', 'price4'] #  nagłówki pliku csv pliku train
-
+cutoff = 120
 
 def data_normalize(x, whole_set_of_Xs):
     #x - min
@@ -53,19 +53,22 @@ def get_data():
     zipf.extractall((os.path.join(os.path.curdir, 'mst')))
 
 
-def process_bossa_data():
+def process_bossa_data(cutoff):
 
     files = [f for f in (os.listdir((os.path.join(os.path.curdir, 'mst')))) if os.path.isfile(os.path.join(path_mst, f))]\
 
     for fi in files:
-
+        print('Processing file: ', fi)
         f = open(os.path.join(path_mst, fi))
         cs = csv.reader(f)
         cs_list = list(cs)
-
-        date_of_last = (cs_list[len(cs_list)-1][1])
-        if(date_of_last[:4]) != CURRENT_YEAR:
-            continue
+        if len(cs_list) < 6 + cutoff:
+            continue  # if there is too little data on given ticker then ignore it
+        cs_list = cs_list[0: len(cs_list)-cutoff]  # ucinamy z końca tyle ile wynosi cutoff
+        date_of_last = (cs_list[len(cs_list)-1][1])  # tutaj jest data ostaniego notowania
+        print (date_of_last)
+        #if(date_of_last[:4]) != CURRENT_YEAR:
+        #    continue
 
         header = cs_list.pop(0)  # removes header
         if str(header).find('OPENINT') != -1:   # if openint is found then eliminate - we don't need these
@@ -88,8 +91,7 @@ def process_bossa_data():
         closes = n_array[:, 0]  # every row of column 0, basically just take the column 0
 
         float_list = n_array.tolist()
-        if len(cs_list) < 5:
-            continue  # if there is too little data on given ticker then ignore it
+
         #print(closes)
         max_close = max(closes)
         min_close = min(closes)
@@ -186,11 +188,16 @@ def merge_csv_files(path_csv):
     # combine all files in the list
     combined_csv = pd.concat([pd.read_csv(join(path_csv, f)) for f in all_filenames])
     # export to csv
-    combined_csv.to_csv("combined_csv.csv", index=False, encoding='utf-8')
+    filename = 'combined_csv.csv'
+    if path_csv == csv_files:
+        filename = str(date.today().day) + str(date.today().month) + str(date.today().year) + '_cutoff' + str(cutoff) + '.csv'
+    combined_csv.to_csv(filename, index=False, encoding='utf-8')
 
-get_data()
-process_bossa_data()
+#get_data()
+process_bossa_data(cutoff)
 merge_csv_files(csv_files)  # this merges small csv per ticket files into one, daily csv for all the tickets
 #merge_csv_files(train_files) # this merges daily csv files into train file
+
+print('Finished successfully for cutoff: ', cutoff)
 
 
