@@ -18,7 +18,7 @@ path_mst = (os.path.join(os.path.curdir, 'mst'))
 csv_files = (os.path.join(os.path.curdir, 'csv_files'))
 train_files = (os.path.join(os.path.curdir, 'train_files'))
 fieldnames = ['label', 'price1', 'price2', 'price3', 'price4'] #  nagłówki pliku csv pliku train
-cutoff = 120
+
 
 def data_normalize(x, whole_set_of_Xs):
     #x - min
@@ -131,19 +131,23 @@ def process_bossa_data(cutoff):
                 csv_wr = csv.writer(csv_file, delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL,
                                             lineterminator='\n')
                 csv_wr.writerow(list1)
+    print('Finished successfully for cutoff: ', cutoff)
 
-
-img_rows, img_cols = 28, 28
-num_classes = 10
+img_rows, img_cols = 1, 4  #tu było 28, 28
+num_classes = 3
 
 
 def data_prep(raw):
-
-    out_y = keras.utils.to_categorical(raw.label, num_classes)
+    print('raw label is: ', raw.label)
+    print('num_classes is: ', num_classes)
     num_images = raw.shape[0]
+    print('num_images is: ', num_images)
+    out_y = keras.utils.to_categorical(raw.label, num_classes, dtype='float32')
+
     x_as_array = raw.values[:, 1:]
     x_shaped_array = x_as_array.reshape(num_images, img_rows, img_cols, 1)
-    out_x = x_shaped_array / 255
+    out_x = x_shaped_array
+    #out_x = x_shaped_array / 255 #tego nie powinno być bo ma zastosowanie do kolorów
     return out_x, out_y
 
 
@@ -151,6 +155,7 @@ def train_model_template():
 
     train_file = "train.csv" #tutaj muszę dać mój plik z labelami
     raw_data = pd.read_csv(train_file)
+
     x, y = data_prep(raw_data)
 
     model = Sequential()
@@ -174,10 +179,26 @@ def train_model_template():
 
 def train_my_model():
 
-    train_file = "train.csv"  # tutaj muszę dać mój plik z labelami
+    train_file = "combined_train_18032020.csv"  # tutaj muszę dać mój plik z labelami
     raw_data = pd.read_csv(train_file)
+    #print(raw_data)
     x, y = data_prep(raw_data)  # wymiary muszą być dobre
     my_model = Sequential()
+    my_model.add(Conv2D(20, kernel_size=(1, 2),
+                     activation='relu',
+                     input_shape=(img_rows, img_cols, 1)))
+    my_model.add(Conv2D(20, kernel_size=(1, 2), activation='relu'))
+    my_model.add(Flatten())
+    my_model.add(Dense(128, activation='relu'))
+    my_model.add(Dense(num_classes, activation='softmax'))
+
+    my_model.compile(loss=keras.losses.categorical_crossentropy,
+                  optimizer='adam',
+                  metrics=['accuracy'])
+    my_model.fit(x, y,
+              batch_size=128,
+              epochs=2,
+              validation_split=0.2)
 
 
 def merge_csv_files(path_csv):
@@ -193,11 +214,20 @@ def merge_csv_files(path_csv):
         filename = str(date.today().day) + str(date.today().month) + str(date.today().year) + '_cutoff' + str(cutoff) + '.csv'
     combined_csv.to_csv(filename, index=False, encoding='utf-8')
 
+    if delete:
+        for f1 in os.listdir(path_csv):
+            print('Deleting: ', f1)
+            if filename.endswith('.csv'):
+                os.unlink(join(path_csv, f1))
+
+
+delete = True
+cutoff = 0
 #get_data()
-process_bossa_data(cutoff)
-merge_csv_files(csv_files)  # this merges small csv per ticket files into one, daily csv for all the tickets
+#process_bossa_data(cutoff)
+#merge_csv_files(csv_files)  # this merges small csv per ticket files into one, daily csv for all the tickets
 #merge_csv_files(train_files) # this merges daily csv files into train file
 
-print('Finished successfully for cutoff: ', cutoff)
 
+train_my_model()
 
