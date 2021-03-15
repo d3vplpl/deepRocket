@@ -17,6 +17,15 @@ CURRENT_YEAR = str(date.today().year)
 path_mst = (os.path.join(os.path.curdir, 'mst'))
 csv_files = (os.path.join(os.path.curdir, 'csv_files'))
 train_files = (os.path.join(os.path.curdir, 'train_files'))
+
+# check if directory exists, if not create it
+if not (os.path.isdir('csv_files')):
+    os.mkdir('csv_files')
+if not (os.path.isdir('train_files')):
+    os.mkdir('train_files')
+
+
+
 fieldnames = ['label', 'price1', 'price2', 'price3', 'price4'] #  nagłówki pliku csv pliku train
 
 
@@ -205,7 +214,7 @@ def merge_csv_files(path_csv):
 
     extension = 'csv'
     all_filenames = [f for f in listdir(path_csv) if isfile(join(path_csv, f))]
-    print(all_filenames)
+    print('Objects to concat', all_filenames)
     # combine all files in the list
     combined_csv = pd.concat([pd.read_csv(join(path_csv, f)) for f in all_filenames])
     # export to csv
@@ -221,12 +230,12 @@ def merge_csv_files(path_csv):
                 os.unlink(join(path_csv, f1))
 
 
-delete = True
+delete = False
 cutoff = 0
-#get_data()
-#process_bossa_data(cutoff)
-#merge_csv_files(csv_files)  # this merges small csv per ticket files into one, daily csv for all the tickets
-#merge_csv_files(train_files) # this merges daily csv files into train file
+get_data()
+process_bossa_data(cutoff)
+merge_csv_files(csv_files)  # this merges small csv per ticket files into one, daily csv for all the tickets
+merge_csv_files(train_files) # this merges daily csv files into train file
 
 
 train_my_model()
